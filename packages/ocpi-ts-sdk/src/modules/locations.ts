@@ -8,7 +8,7 @@ import type {
   EvsePatch,
   Location,
   LocationPatch,
-} from "../schemas/v2.2.1/locations.js";
+} from "../schemas/index.js";
 
 type EvseStatus =
   | "AVAILABLE"

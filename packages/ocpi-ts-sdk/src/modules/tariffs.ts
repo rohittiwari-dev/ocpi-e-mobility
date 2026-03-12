@@ -1,7 +1,7 @@
 import type { OCPIClient } from "../client/index.js";
 import type { PaginatedResponse } from "../client/pagination.js";
 import type { PaginationQuery } from "../client/types.js";
-import type { Tariff } from "../schemas/v2.2.1/tariffs.js";
+import type { Tariff } from "../schemas/index.js";
 
 export class OcpiTariffsModule {
   constructor(private readonly client: OCPIClient) {}

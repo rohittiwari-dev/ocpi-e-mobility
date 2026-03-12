@@ -1,5 +1,5 @@
 import type { OCPIClient } from "../client/index.js";
-import type { Credentials } from "../schemas/v2.2.1/credentials.js";
+import type { Credentials } from "../schemas/index.js";
 
 export class OcpiCredentialsModule {
   constructor(private readonly client: OCPIClient) {}

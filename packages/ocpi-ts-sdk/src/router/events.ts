@@ -1,16 +1,19 @@
-import type { Cdr } from "../schemas/v2.2.1/cdrs.js";
 import type {
   CancelReservation,
+  Cdr,
+  Credentials,
+  Location,
+  LocationPatch,
   ReserveNow,
+  Session,
+  SessionPatch,
   StartSession,
   StopSession,
+  Tariff,
+  Token,
+  TokenPatch,
   UnlockConnector,
-} from "../schemas/v2.2.1/commands.js";
-import type { Credentials } from "../schemas/v2.2.1/credentials.js";
-import type { Location, LocationPatch } from "../schemas/v2.2.1/locations.js";
-import type { Session, SessionPatch } from "../schemas/v2.2.1/sessions.js";
-import type { Tariff } from "../schemas/v2.2.1/tariffs.js";
-import type { Token, TokenPatch } from "../schemas/v2.2.1/tokens.js";
+} from "../schemas/index.js";
 import type { OcpiHandler } from "./context.js";
 
 /** All event handler signatures for OCPIRouter.on() */

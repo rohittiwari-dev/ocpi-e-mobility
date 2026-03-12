@@ -1,4 +1,4 @@
-import type { Tariff } from "../schemas/v2.2.1/tariffs.js";
+import type { Tariff } from "../schemas/index.js";
 
 export interface CostEstimateOptions {
   /** The estimated energy drawn in kilowatt-hours (kWh) */

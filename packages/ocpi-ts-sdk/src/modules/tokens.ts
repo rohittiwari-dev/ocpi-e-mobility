@@ -6,7 +6,7 @@ import type {
   LocationReferences,
   Token,
   TokenPatch,
-} from "../schemas/v2.2.1/tokens.js";
+} from "../schemas/index.js";
 
 type TokenType = "AD_HOC_USER" | "APP_USER" | "OTHER" | "RFID";
 
