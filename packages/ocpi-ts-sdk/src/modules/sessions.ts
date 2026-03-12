@@ -1,43 +1,58 @@
-import type { OcpiClient } from "../client/index.js";
-import type { Session } from "../schemas/sessions.js";
+import type { OCPIClient } from "../client/index.js";
+import type { PaginatedResponse } from "../client/pagination.js";
+import type { PaginationQuery } from "../client/types.js";
+import type { Session, SessionPatch } from "../schemas/sessions.js";
 
 export class OcpiSessionsModule {
-  constructor(private readonly client: OcpiClient) {}
+  constructor(private readonly client: OCPIClient) {}
 
-  // Sender (CPO) pushing updates
-  public async putSession(
-    countryCode: string,
-    partyId: string,
+  /** Pull a page of sessions from the partner */
+  public pull(query?: PaginationQuery): Promise<PaginatedResponse<Session>> {
+    const url = this.client.resolveEndpoint("sessions");
+    return this.client.pagination.getList<Session>(url, query);
+  }
+
+  /** Stream ALL sessions lazily (no OOM) */
+  public stream(query?: PaginationQuery): AsyncGenerator<Session> {
+    const url = this.client.resolveEndpoint("sessions");
+    return this.client.pagination.stream<Session>(url, query);
+  }
+
+  /** Fetch a single session by ID */
+  public async get(sessionId: string): Promise<Session> {
+    const base = this.client.resolveEndpoint("sessions");
+    const { data } = await this.client.get<Session>(
+      `${base}/${this.client.config.countryCode}/${this.client.config.partyId}/${sessionId}`,
+    );
+    return data;
+  }
+
+  /**
+   * Create / push a session to the partner (PUT).
+   * Call on StartTransaction or on initial session push.
+   */
+  public async create(
     session: Session,
-  ) {
-    return this.client.put<unknown>(
-      `/ocpi/receiver/2.2.1/sessions/${countryCode}/${partyId}/${session.id}`,
+    opts?: { idempotencyKey?: string },
+  ): Promise<void> {
+    const base = this.client.resolveEndpoint("sessions");
+    await this.client.put<unknown>(
+      `${base}/${this.client.config.countryCode}/${this.client.config.partyId}/${session.id}`,
       session,
+      opts,
     );
   }
 
-  public async patchSession(
-    countryCode: string,
-    partyId: string,
-    sessionId: string,
-    update: Partial<Session>,
-  ) {
-    return this.client.patch<unknown>(
-      `/ocpi/receiver/2.2.1/sessions/${countryCode}/${partyId}/${sessionId}`,
-      update,
-    );
-  }
-
-  // Receiver (EMSP) fetching data
-  public getSessionsList(query?: {
-    limit?: number;
-    offset?: number;
-    date_from?: string;
-    date_to?: string;
-  }) {
-    return this.client.pagination.getList<Session>(
-      "/ocpi/sender/2.2.1/sessions",
-      query,
+  /**
+   * Partially update a session (PATCH).
+   * Call on MeterValues or StopTransaction.
+   * `last_updated` is required in patch data per OCPI spec.
+   */
+  public async update(sessionId: string, patch: SessionPatch): Promise<void> {
+    const base = this.client.resolveEndpoint("sessions");
+    await this.client.patch<unknown>(
+      `${base}/${this.client.config.countryCode}/${this.client.config.partyId}/${sessionId}`,
+      patch,
     );
   }
 }

@@ -162,3 +162,22 @@ export const LocationSchema = z.object({
   last_updated: z.string().datetime(),
 });
 export type Location = z.infer<typeof LocationSchema>;
+
+/**
+ * Patch schemas — all fields optional EXCEPT last_updated (required by OCPI spec).
+ * Use these for PATCH requests, not PUT.
+ */
+export const ConnectorPatchSchema = ConnectorSchema.partial().required({
+  last_updated: true,
+});
+export type ConnectorPatch = z.infer<typeof ConnectorPatchSchema>;
+
+export const EvsePatchSchema = EvseSchema.partial().required({
+  last_updated: true,
+});
+export type EvsePatch = z.infer<typeof EvsePatchSchema>;
+
+export const LocationPatchSchema = LocationSchema.partial().required({
+  last_updated: true,
+});
+export type LocationPatch = z.infer<typeof LocationPatchSchema>;

@@ -1,27 +1,50 @@
-import type { OcpiClient } from "../client/index.js";
+import type { OCPIClient } from "../client/index.js";
+import type { PaginatedResponse } from "../client/pagination.js";
+import type { PaginationQuery } from "../client/types.js";
 import type { Tariff } from "../schemas/tariffs.js";
 
 export class OcpiTariffsModule {
-  constructor(private readonly client: OcpiClient) {}
+  constructor(private readonly client: OCPIClient) {}
 
-  // Sender (CPO) pushing updates
-  public async putTariff(countryCode: string, partyId: string, tariff: Tariff) {
-    return this.client.put<unknown>(
-      `/ocpi/receiver/2.2.1/tariffs/${countryCode}/${partyId}/${tariff.id}`,
-      tariff,
+  /** Pull a page of tariffs from the partner */
+  public pull(query?: PaginationQuery): Promise<PaginatedResponse<Tariff>> {
+    const url = this.client.resolveEndpoint("tariffs");
+    return this.client.pagination.getList<Tariff>(url, query);
+  }
+
+  /** Stream ALL tariffs lazily (no OOM) */
+  public stream(query?: PaginationQuery): AsyncGenerator<Tariff> {
+    const url = this.client.resolveEndpoint("tariffs");
+    return this.client.pagination.stream<Tariff>(url, query);
+  }
+
+  /** Fetch a single tariff by ID */
+  public async get(tariffId: string): Promise<Tariff> {
+    const base = this.client.resolveEndpoint("tariffs");
+    const { data } = await this.client.get<Tariff>(
+      `${base}/${this.client.config.countryCode}/${this.client.config.partyId}/${tariffId}`,
+    );
+    return data;
+  }
+
+  /**
+   * Push a tariff to the partner (PUT — Client Owned Object).
+   */
+  public async push(tariffId: string, data: Tariff): Promise<void> {
+    const base = this.client.resolveEndpoint("tariffs");
+    await this.client.put<unknown>(
+      `${base}/${this.client.config.countryCode}/${this.client.config.partyId}/${tariffId}`,
+      data,
     );
   }
 
-  // Receiver (EMSP) fetching data
-  public getTariffsList(query?: {
-    limit?: number;
-    offset?: number;
-    date_from?: string;
-    date_to?: string;
-  }) {
-    return this.client.pagination.getList<Tariff>(
-      "/ocpi/sender/2.2.1/tariffs",
-      query,
+  /**
+   * Delete a tariff from the partner.
+   */
+  public async delete(tariffId: string): Promise<void> {
+    const base = this.client.resolveEndpoint("tariffs");
+    await this.client.delete<unknown>(
+      `${base}/${this.client.config.countryCode}/${this.client.config.partyId}/${tariffId}`,
     );
   }
 }

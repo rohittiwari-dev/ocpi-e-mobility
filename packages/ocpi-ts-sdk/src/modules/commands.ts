@@ -1,4 +1,4 @@
-import type { OcpiClient } from "../client/index.js";
+import type { OCPIClient } from "../client/index.js";
 import type {
   CancelReservation,
   ReserveNow,
@@ -7,42 +7,64 @@ import type {
   UnlockConnector,
 } from "../schemas/commands.js";
 
+export interface CommandResponse {
+  result: "ACCEPTED" | "REJECTED" | "TIMEOUT" | "UNKNOWN_SESSION";
+  message?: Array<{ language: string; text: string }>;
+  timeout?: number;
+}
+
 export class OcpiCommandsModule {
-  constructor(private readonly client: OcpiClient) {}
+  constructor(private readonly client: OCPIClient) {}
 
-  // Sender (EMSP) sending commands to Receiver (CPO)
-  public async cancelReservation(payload: CancelReservation) {
-    return this.client.post<{ result: string; timeout: number }>(
-      "/ocpi/receiver/2.2.1/commands/CANCEL_RESERVATION",
-      payload,
+  /** Send a StartSession command to the CPO */
+  public async startSession(cmd: StartSession): Promise<CommandResponse> {
+    const base = this.client.resolveEndpoint("commands");
+    const { data } = await this.client.post<CommandResponse>(
+      `${base}/START_SESSION`,
+      cmd,
     );
+    return data;
   }
 
-  public async reserveNow(payload: ReserveNow) {
-    return this.client.post<{ result: string; timeout: number }>(
-      "/ocpi/receiver/2.2.1/commands/RESERVE_NOW",
-      payload,
+  /** Send a StopSession command to the CPO */
+  public async stopSession(cmd: StopSession): Promise<CommandResponse> {
+    const base = this.client.resolveEndpoint("commands");
+    const { data } = await this.client.post<CommandResponse>(
+      `${base}/STOP_SESSION`,
+      cmd,
     );
+    return data;
   }
 
-  public async startSession(payload: StartSession) {
-    return this.client.post<{ result: string; timeout: number }>(
-      "/ocpi/receiver/2.2.1/commands/START_SESSION",
-      payload,
+  /** Send a ReserveNow command to the CPO */
+  public async reserveNow(cmd: ReserveNow): Promise<CommandResponse> {
+    const base = this.client.resolveEndpoint("commands");
+    const { data } = await this.client.post<CommandResponse>(
+      `${base}/RESERVE_NOW`,
+      cmd,
     );
+    return data;
   }
 
-  public async stopSession(payload: StopSession) {
-    return this.client.post<{ result: string; timeout: number }>(
-      "/ocpi/receiver/2.2.1/commands/STOP_SESSION",
-      payload,
+  /** Send a CancelReservation command to the CPO */
+  public async cancelReservation(
+    cmd: CancelReservation,
+  ): Promise<CommandResponse> {
+    const base = this.client.resolveEndpoint("commands");
+    const { data } = await this.client.post<CommandResponse>(
+      `${base}/CANCEL_RESERVATION`,
+      cmd,
     );
+    return data;
   }
 
-  public async unlockConnector(payload: UnlockConnector) {
-    return this.client.post<{ result: string; timeout: number }>(
-      "/ocpi/receiver/2.2.1/commands/UNLOCK_CONNECTOR",
-      payload,
+  /** Send an UnlockConnector command to the CPO */
+  public async unlockConnector(cmd: UnlockConnector): Promise<CommandResponse> {
+    const base = this.client.resolveEndpoint("commands");
+    const { data } = await this.client.post<CommandResponse>(
+      `${base}/UNLOCK_CONNECTOR`,
+      cmd,
     );
+    return data;
   }
 }

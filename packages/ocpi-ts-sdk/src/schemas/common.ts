@@ -41,3 +41,37 @@ export const BusinessDetailsSchema = z.object({
     .optional(),
 });
 export type BusinessDetails = z.infer<typeof BusinessDetailsSchema>;
+
+/**
+ * OCPI response envelope schema — validates the outer wrapper before destructuring.
+ * Per spec: status_code 1000 = success. 2xxx = client error. 3xxx = server error.
+ */
+export const OcpiResponseSchema = z.object({
+  status_code: z.number().int(),
+  status_message: z.string().optional(),
+  data: z.unknown().optional(),
+  timestamp: z.string().datetime(),
+});
+export type OcpiResponseEnvelope = z.infer<typeof OcpiResponseSchema>;
+
+/**
+ * Token authorization info — returned by the Tokens module authorize() call.
+ */
+export const AuthorizationInfoSchema = z.object({
+  allowed: z.enum([
+    "ALLOWED",
+    "BLOCKED",
+    "EXPIRED",
+    "NO_CREDIT",
+    "NOT_ALLOWED",
+  ]),
+  token: z.object({
+    uid: z.string().max(36),
+    type: z.enum(["AD_HOC_USER", "APP_USER", "OTHER", "RFID"]),
+    contract_id: z.string().max(36),
+  }),
+  location: z.any().optional(),
+  authorization_reference: z.string().max(36).optional(),
+  info: z.any().optional(),
+});
+export type AuthorizationInfo = z.infer<typeof AuthorizationInfoSchema>;

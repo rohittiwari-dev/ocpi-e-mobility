@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
-import { OcpiClient } from "./client/index.js";
-import { GeoLocationSchema } from "./schemas/index.js";
+import { OcpiClient } from "../client/index.js";
+import { GeoLocationSchema } from "../schemas/index.js";
 
 test("OcpiClient handles basic GET fetching", async (_t) => {
   const client = new OcpiClient({

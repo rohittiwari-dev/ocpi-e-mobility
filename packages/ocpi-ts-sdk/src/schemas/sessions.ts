@@ -44,3 +44,9 @@ export const SessionSchema = z.object({
   last_updated: z.string().datetime(),
 });
 export type Session = z.infer<typeof SessionSchema>;
+
+/** Patch schema — all fields optional except last_updated (required by OCPI spec) */
+export const SessionPatchSchema = SessionSchema.partial().required({
+  last_updated: true,
+});
+export type SessionPatch = z.infer<typeof SessionPatchSchema>;

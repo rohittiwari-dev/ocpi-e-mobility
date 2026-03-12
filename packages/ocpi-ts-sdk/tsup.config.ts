@@ -4,6 +4,10 @@ export default defineConfig({
   entry: [
     "src/index.ts",
     "src/client/index.ts",
+    "src/client/errors.ts",
+    "src/logger/index.ts",
+    "src/router/index.ts",
+    "src/registry/index.ts",
     "src/schemas/index.ts",
     "src/schemas/locations.ts",
     "src/schemas/sessions.ts",
@@ -12,7 +16,6 @@ export default defineConfig({
     "src/schemas/tokens.ts",
     "src/schemas/commands.ts",
     "src/schemas/credentials.ts",
-    "src/modules/index.ts",
   ],
   format: ["cjs", "esm"],
   dts: true,
@@ -20,4 +23,7 @@ export default defineConfig({
   sourcemap: false,
   clean: true,
   outDir: "dist",
+  // Avoid bundling node built-ins — let the consumer's runtime handle them
+  external: ["node:events", "node:http", "node:crypto"],
 });
+

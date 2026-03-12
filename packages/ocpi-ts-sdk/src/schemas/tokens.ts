@@ -25,3 +25,9 @@ export const TokenSchema = z.object({
   last_updated: z.string().datetime(),
 });
 export type Token = z.infer<typeof TokenSchema>;
+
+/** Patch schema — all fields optional except last_updated (required by OCPI spec) */
+export const TokenPatchSchema = TokenSchema.partial().required({
+  last_updated: true,
+});
+export type TokenPatch = z.infer<typeof TokenPatchSchema>;
