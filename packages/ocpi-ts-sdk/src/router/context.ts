@@ -100,4 +100,31 @@ export interface OcpiRouterConfig {
     credentials: { token: string; url: string; roles: unknown[] },
     ctx: OcpiRouterContext,
   ) => Promise<{ url: string; token: string; roles: unknown[] }>;
+
+  /**
+   * Defines how strict the router should be when validating incoming payloads.
+   * - "strict-2.2.1" (default): Fails request with HTTP 400 (OCPI 2001) if payload misses required 2.2.1 fields.
+   * - "lenient": Logs a warning but allows the payload to pass through (useful for older 2.1.1 partners).
+   */
+  schemaValidation?: "strict-2.2.1" | "lenient";
+
+  /**
+   * Router behavior mode.
+   * - "ENDPOINT" (default): Executes local event handlers (e.g., location:put)
+   * - "HUB": Acts as an OCPI proxy. If the OCPI-to-party-id header is present,
+   *   it looks up the destination partner and proxies the HTTP request seamlessly.
+   */
+  mode?: "ENDPOINT" | "HUB";
+
+  /**
+   * Required when mode === "HUB".
+   * Given the incoming HTTP headers (OCPI-to-party-id and OCPI-to-country-code) and the authenticated sender,
+   * resolve the destination partner's base URL and credentials token.
+   * Return null if the destination is unknown or unauthorized.
+   */
+  resolveHubDestination?: (
+    sender: OcpiPartner,
+    toCountryCode: string,
+    toPartyId: string,
+  ) => Promise<{ baseUrl: string; token: string } | null>;
 }

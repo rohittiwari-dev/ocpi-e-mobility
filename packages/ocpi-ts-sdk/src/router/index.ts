@@ -8,6 +8,7 @@ import type {
   OcpiRouterContext,
 } from "./context.js";
 import type { RouterEvent, RouterEventMap } from "./events.js";
+import { EventSchemaMap } from "./schemas.js";
 
 /**
  * OCPIRouter — Framework-agnostic OCPI receiver.
@@ -168,6 +169,99 @@ export class OCPIRouter {
       params,
     };
 
+    // === HUB PROXY MODE ===
+    // If router is configured as a HUB, we proxy everything EXCEPT the credentials module
+    if (this.config.mode === "HUB" && module !== "credentials") {
+      const toCountryCode = request.headers.get("OCPI-to-country-code");
+      const toPartyId = request.headers.get("OCPI-to-party-id");
+
+      if (!toCountryCode || !toPartyId) {
+        return this._errorResponse(
+          2001,
+          "Missing OCPI-to-country-code or OCPI-to-party-id for HUB routing",
+          requestId,
+          correlationId,
+          400,
+        );
+      }
+
+      if (!this.config.resolveHubDestination) {
+        return this._errorResponse(
+          3000,
+          "Hub routing is not properly configured (missing resolveHubDestination)",
+          requestId,
+          correlationId,
+          500,
+        );
+      }
+
+      const destination = await this.config.resolveHubDestination(
+        partner,
+        toCountryCode,
+        toPartyId,
+      );
+
+      if (!destination) {
+        return this._errorResponse(
+          2000,
+          `Unknown destination party ${toCountryCode}-${toPartyId}`,
+          requestId,
+          correlationId,
+          404,
+        );
+      }
+
+      const proxyUrl = destination.baseUrl.replace(/\/$/, "") + basePath;
+      const proxyHeaders = new Headers(request.headers);
+
+      // Pass our credentials to the destination
+      proxyHeaders.set(
+        "Authorization",
+        `Token ${Buffer.from(destination.token).toString("base64")}`,
+      );
+
+      // Remove host so fetch() generates it naturally from proxyUrl
+      proxyHeaders.delete("host");
+
+      const proxyReq = new Request(proxyUrl, {
+        method: request.method,
+        headers: proxyHeaders,
+        body: ["GET", "HEAD"].includes(request.method)
+          ? undefined
+          : await request.clone().arrayBuffer(),
+      });
+
+      try {
+        return await fetch(proxyReq);
+      } catch (err) {
+        this._log.error(
+          `Hub Proxy Error forwarding to ${proxyUrl}`,
+          err instanceof Error ? err : { error: String(err) },
+        );
+        return this._errorResponse(
+          3000,
+          "Hub proxy failed to reach destination",
+          requestId,
+          correlationId,
+          502,
+        );
+      }
+    }
+    // === END HUB PROXY MODE ===
+
+    // Dispatch to handler
+    const handler = this.handlers.get(event);
+    if (!handler) {
+      // No handler registered — return 404 with OCPI code
+      return this._errorResponse(
+        2000,
+        `No handler registered for ${event}`,
+        requestId,
+        correlationId,
+        404,
+      );
+    }
+
     // Parse body
     let body: unknown;
     if (["PUT", "POST", "PATCH"].includes(method)) {
@@ -182,19 +276,35 @@ export class OCPIRouter {
           400,
         );
       }
-    }
 
-    // Dispatch to handler
-    const handler = this.handlers.get(event);
-    if (!handler) {
-      // No handler registered — return 404 with OCPI code
-      return this._errorResponse(
-        2000,
-        `No handler registered for ${event}`,
-        requestId,
-        correlationId,
-        404,
-      );
+      // Validate payload via Zod schemas
+      const schema = EventSchemaMap[event];
+      if (schema) {
+        const validation = schema.safeParse(body);
+        if (!validation.success) {
+          if (this.config.schemaValidation === "lenient") {
+            this._log.warn(
+              `Lenient validation bypassed schema errors for ${event}`,
+              {
+                issues: validation.error.issues,
+              },
+            );
+          } else {
+            const missing = validation.error.issues
+              .map((issue) => `${issue.path.join(".")} (${issue.message})`)
+              .join(", ");
+            return this._errorResponse(
+              2001,
+              `Invalid payload: ${missing}`,
+              requestId,
+              correlationId,
+              400, // Returning HTTP 400 Bad Request, but OCPI Status 2001 for invalid parameters
+            );
+          }
+        } else {
+          body = validation.data; // Strip unknown properties and enforce defaults
+        }
+      }
     }
 
     let result: OcpiHandlerResult;

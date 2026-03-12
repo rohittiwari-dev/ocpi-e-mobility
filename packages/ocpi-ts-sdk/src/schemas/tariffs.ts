@@ -4,6 +4,7 @@ import { DisplayTextSchema, PriceSchema } from "./common.js";
 export const PriceComponentSchema = z.object({
   type: z.enum(["ENERGY", "FLAT", "PARKING_TIME", "TIME"]),
   price: z.number(),
+  vat: z.number().optional(),
   step_size: z.number(),
 });
 export type PriceComponent = z.infer<typeof PriceComponentSchema>;

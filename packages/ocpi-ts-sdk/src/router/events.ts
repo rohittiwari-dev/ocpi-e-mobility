@@ -20,29 +20,11 @@ export interface RouterEventMap {
   "location:patch": OcpiHandler<LocationPatch>;
   "location:delete": OcpiHandler<{ locationId: string }>;
   // EVSEs (same location endpoint, deeper path)
-  "evse:put": OcpiHandler<{
-    locationId: string;
-    evseUid: string;
-    data: unknown;
-  }>;
-  "evse:patch": OcpiHandler<{
-    locationId: string;
-    evseUid: string;
-    data: unknown;
-  }>;
+  "evse:put": OcpiHandler<unknown>; // Should be Evse but we'll map it dynamically
+  "evse:patch": OcpiHandler<unknown>;
   // Connector
-  "connector:put": OcpiHandler<{
-    locationId: string;
-    evseUid: string;
-    connectorId: string;
-    data: unknown;
-  }>;
-  "connector:patch": OcpiHandler<{
-    locationId: string;
-    evseUid: string;
-    connectorId: string;
-    data: unknown;
-  }>;
+  "connector:put": OcpiHandler<unknown>; // Should be Connector
+  "connector:patch": OcpiHandler<unknown>;
   // Sessions
   "session:put": OcpiHandler<Session>;
   "session:patch": OcpiHandler<SessionPatch>;

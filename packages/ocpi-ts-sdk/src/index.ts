@@ -37,9 +37,14 @@ export {
   OcpiTariffsModule,
   OcpiTokensModule,
 } from "./client/index.js";
-// ── Pagination ───────────────────────────────────────────────────────────────
+// ── Pagination & Pump ───────────────────────────────────────────────────────────────
 export type { PaginatedResponse } from "./client/pagination.js";
 export { OcpiPagination } from "./client/pagination.js";
+export {
+  OcpiDataPump,
+  type OcpiDataPumpConfig,
+  type OcpiDataPumpEvents,
+} from "./client/pump.js";
 export { PartnerRateLimiter } from "./client/rate-limiter.js";
 export type {
   OcpiClientConfig,
@@ -74,3 +79,10 @@ export * from "./schemas/sessions.js";
 export * from "./schemas/tariffs.js";
 export * from "./schemas/tokens.js";
 export * from "./schemas/versions.js";
+
+// ── Utils ────────────────────────────────────────────────────────────────────
+export {
+  type CostEstimate,
+  type CostEstimateOptions,
+  OcpiCalculator,
+} from "./utils/calculator.js";

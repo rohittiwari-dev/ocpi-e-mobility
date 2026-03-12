@@ -9,12 +9,13 @@ const PARTNER: OcpiPartner = {
   countryCode: "DE",
 };
 
-function makeRouter() {
+function makeRouter(strict = false) {
   return new OCPIRouter({
     version: "2.2.1",
     prefix: "/ocpi",
     tokenAuth: async (token) => (token === "valid" ? PARTNER : null),
     logging: { enabled: false },
+    schemaValidation: strict ? "strict-2.2.1" : "lenient",
   });
 }
 
@@ -302,6 +303,7 @@ describe("OCPIRouter", () => {
         version: "2.2.1",
         tokenAuth: async () => PARTNER,
         logging: { enabled: false },
+        schemaValidation: "lenient",
         onError: (err) => {
           capturedError = err;
         },
@@ -360,6 +362,7 @@ describe("OCPIRouter", () => {
           tenantId,
         }),
         logging: { enabled: false },
+        schemaValidation: "lenient",
       });
 
       let receivedTenantId: string | undefined;
@@ -386,6 +389,7 @@ describe("OCPIRouter", () => {
         tokenAuth: async () => PARTNER,
         authorize: async () => false,
         logging: { enabled: false },
+        schemaValidation: "lenient",
       });
       router.on("location:put", async () => ({ status_code: 1000 }));
       const req = makeRequest(
@@ -439,6 +443,65 @@ describe("OCPIRouter", () => {
       const req = makeRequest("/ocpi/receiver/2.2.1/cdrs", "POST", {});
       const res = await handler(req);
       expect(res).toBeInstanceOf(Response);
+    });
+  });
+
+  describe("payload validation", () => {
+    it("returns 400 Bad Request with OCPI 2001 when payload is invalid in strict mode", async () => {
+      const router = makeRouter(true); // strict-2.2.1
+      router.on("location:put", async () => ({ status_code: 1000 }));
+
+      const req = makeRequest(
+        "/ocpi/receiver/2.2.1/locations/DE/CPO/LOC1",
+        "PUT",
+        { invalid: "data" }, // Missing all required Location fields
+      );
+
+      const res = await router.handle(req);
+      expect(res.status).toBe(400); // HTTP status
+
+      const body = (await res.json()) as {
+        status_code: number;
+        status_message: string;
+      };
+      expect(body.status_code).toBe(2001); // OCPI status
+      expect(body.status_message).toContain("id (Required)");
+      expect(body.status_message).toContain("type (Required)");
+    });
+
+    it("passes validation and strips unknown properties when payload is valid", async () => {
+      const router = makeRouter(true); // strict-2.2.1
+      let receivedData: any;
+      router.on("location:put", async (data) => {
+        receivedData = data;
+        return { status_code: 1000 };
+      });
+
+      const validLocation = {
+        id: "LOC1",
+        type: "ON_STREET",
+        address: "Main St",
+        city: "Berlin",
+        country: "DEU",
+        coordinates: { latitude: "52.52000", longitude: "13.40500" },
+        time_zone: "Europe/Berlin",
+        last_updated: new Date().toISOString(),
+        extra_unknown_field: "should_be_stripped",
+      };
+
+      const req = makeRequest(
+        "/ocpi/receiver/2.2.1/locations/DE/CPO/LOC1",
+        "PUT",
+        validLocation,
+      );
+
+      const res = await router.handle(req);
+      expect(res.status).toBe(200);
+
+      // Verify the unknown field was stripped by Zod
+      expect(receivedData).toBeDefined();
+      expect(receivedData.id).toBe("LOC1");
+      expect(receivedData.extra_unknown_field).toBeUndefined();
     });
   });
 });
