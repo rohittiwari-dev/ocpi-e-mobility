@@ -1,7 +1,7 @@
 import type { OCPIClient } from "../client/index.js";
 import type { PaginatedResponse } from "../client/pagination.js";
 import type { PaginationQuery } from "../client/types.js";
-import type { Session, SessionPatch } from "../schemas/sessions.js";
+import type { Session, SessionPatch } from "../schemas/v2.2.1/sessions.js";
 
 export class OcpiSessionsModule {
   constructor(private readonly client: OCPIClient) {}

@@ -3,7 +3,7 @@ import {
   BusinessDetailsSchema,
   DisplayTextSchema,
   GeoLocationSchema,
-} from "./common.js";
+} from "../common.js";
 
 export const ConnectorSchema = z.object({
   id: z.string().max(36),
@@ -105,7 +105,7 @@ export const EvseSchema = z.object({
       z.enum(["EV_ONLY", "PLUGGED", "DISABLED", "CUSTOMERS", "MOTORCYCLES"]),
     )
     .optional(),
-  images: z.array(z.any()).optional(), // ImageSchema to be added if needed
+  images: z.array(z.any()).optional(),
   last_updated: z.string().datetime(),
 });
 export type Evse = z.infer<typeof EvseSchema>;
@@ -126,7 +126,7 @@ export const LocationSchema = z.object({
   postal_code: z.string().max(10).optional(),
   country: z.string().length(3),
   coordinates: GeoLocationSchema,
-  related_locations: z.array(z.any()).optional(), // AdditionalGeoLocationSchema to be added
+  related_locations: z.array(z.any()).optional(),
   evses: z.array(EvseSchema).optional(),
   directions: z.array(DisplayTextSchema).optional(),
   operator: BusinessDetailsSchema.optional(),
@@ -155,18 +155,14 @@ export const LocationSchema = z.object({
     )
     .optional(),
   time_zone: z.string().max(255),
-  opening_times: z.any().optional(), // HoursSchema to be added
+  opening_times: z.any().optional(),
   charging_when_closed: z.boolean().optional(),
-  images: z.array(z.any()).optional(), // ImageSchema
-  energy_mix: z.any().optional(), // EnergyMixSchema
+  images: z.array(z.any()).optional(),
+  energy_mix: z.any().optional(),
   last_updated: z.string().datetime(),
 });
 export type Location = z.infer<typeof LocationSchema>;
 
-/**
- * Patch schemas — all fields optional EXCEPT last_updated (required by OCPI spec).
- * Use these for PATCH requests, not PUT.
- */
 export const ConnectorPatchSchema = ConnectorSchema.partial().required({
   last_updated: true,
 });

@@ -5,7 +5,7 @@ import type {
   StartSession,
   StopSession,
   UnlockConnector,
-} from "../schemas/commands.js";
+} from "../schemas/v2.2.1/commands.js";
 
 export interface CommandResponse {
   result: "ACCEPTED" | "REJECTED" | "TIMEOUT" | "UNKNOWN_SESSION";

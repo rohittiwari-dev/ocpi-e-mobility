@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DisplayTextSchema, PriceSchema } from "./common.js";
+import { DisplayTextSchema, PriceSchema } from "../common.js";
 
 export const PriceComponentSchema = z.object({
   type: z.enum(["ENERGY", "FLAT", "PARKING_TIME", "TIME"]),

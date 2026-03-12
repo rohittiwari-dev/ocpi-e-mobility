@@ -1,26 +1,29 @@
 import { describe, expect, it } from "vitest";
 import {
-  CancelReservationSchema,
-  StartSessionSchema,
-  StopSessionSchema,
-  UnlockConnectorSchema,
-} from "../schemas/commands.js";
-import {
   AuthorizationInfoSchema,
   DisplayTextSchema,
   GeoLocationSchema,
   OcpiResponseSchema,
   PriceSchema,
 } from "../schemas/common.js";
-import { CredentialsSchema } from "../schemas/credentials.js";
+import {
+  CancelReservationSchema,
+  StartSessionSchema,
+  StopSessionSchema,
+  UnlockConnectorSchema,
+} from "../schemas/v2.2.1/commands.js";
+import { CredentialsSchema } from "../schemas/v2.2.1/credentials.js";
 import {
   ConnectorPatchSchema,
   EvsePatchSchema,
   LocationPatchSchema,
   LocationSchema,
-} from "../schemas/locations.js";
-import { SessionPatchSchema, SessionSchema } from "../schemas/sessions.js";
-import { TokenPatchSchema, TokenSchema } from "../schemas/tokens.js";
+} from "../schemas/v2.2.1/locations.js";
+import {
+  SessionPatchSchema,
+  SessionSchema,
+} from "../schemas/v2.2.1/sessions.js";
+import { TokenPatchSchema, TokenSchema } from "../schemas/v2.2.1/tokens.js";
 import { VersionSchema } from "../schemas/versions.js";
 
 // ── Common ────────────────────────────────────────────────────────────────────

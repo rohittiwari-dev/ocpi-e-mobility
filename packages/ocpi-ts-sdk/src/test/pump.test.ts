@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OCPIClient } from "../client/index.js";
 import { OcpiDataPump } from "../client/pump.js";
-import type { Location } from "../schemas/locations.js";
-import type { Tariff } from "../schemas/tariffs.js";
+import type { Location } from "../schemas/v2.2.1/locations.js";
+import type { Tariff } from "../schemas/v2.2.1/tariffs.js";
 
 const DUMMY_LOCATION: Location = {
   id: "LOC1",

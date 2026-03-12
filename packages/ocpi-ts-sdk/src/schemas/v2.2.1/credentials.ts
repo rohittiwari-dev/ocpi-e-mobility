@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const CredentialsRoleSchema = z.object({
   role: z.enum(["CPO", "EMSP", "HUB", "NAP", "NSP", "OTHER", "SCSP"]),
-  business_details: z.any(), // BusinessDetailsSchema is in common.js, but avoiding circular dep here. Can be just basic struct
+  business_details: z.any(),
   party_id: z.string().length(3),
   country_code: z.string().length(2),
 });

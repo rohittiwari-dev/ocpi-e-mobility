@@ -21,12 +21,11 @@ export const TokenSchema = z.object({
   default_profile_type: z
     .enum(["CHEAP", "FAST", "GREEN", "REGULAR"])
     .optional(),
-  energy_contract: z.any().optional(), // EnergyContractSchema
+  energy_contract: z.any().optional(),
   last_updated: z.string().datetime(),
 });
 export type Token = z.infer<typeof TokenSchema>;
 
-/** Patch schema — all fields optional except last_updated (required by OCPI spec) */
 export const TokenPatchSchema = TokenSchema.partial().required({
   last_updated: true,
 });

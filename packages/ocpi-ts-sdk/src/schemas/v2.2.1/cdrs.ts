@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PriceSchema } from "./common.js";
+import { PriceSchema } from "../common.js";
 import { ChargingPeriodSchema } from "./sessions.js";
 
 export const SignedDataSchema = z.object({
@@ -27,7 +27,7 @@ export const CdrSchema = z.object({
   connector_id: z.string().max(36),
   meter_id: z.string().max(255).optional(),
   currency: z.string().length(3),
-  tariffs: z.array(z.any()).optional(), // TariffSchema
+  tariffs: z.array(z.any()).optional(),
   charging_periods: z.array(ChargingPeriodSchema),
   signed_data: SignedDataSchema.optional(),
   total_cost: PriceSchema,

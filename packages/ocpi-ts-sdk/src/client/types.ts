@@ -37,11 +37,11 @@ export interface OcpiClientConfig {
   countryCode: string;
 
   /**
-   * Preferred OCPI version.
-   * The actual version is negotiated with the partner during init().
-   * Defaults to '2.2.1'.
+   * Preferred OCPI version. Negotiated dynamically with the partner during init().
+   * Well-known values: "2.1.1", "2.2.1", "3.0" — any future version string works.
+   * Defaults to "2.2.1".
    */
-  version?: "2.1.1" | "2.2.1";
+  version?: string;
 
   /**
    * Token encoding in the Authorization header.

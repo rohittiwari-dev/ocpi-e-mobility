@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Tariff } from "../schemas/tariffs.js";
+import type { Tariff } from "../schemas/v2.2.1/tariffs.js";
 import { OcpiCalculator } from "../utils/calculator.js";
 
 describe("OcpiCalculator", () => {

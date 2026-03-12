@@ -63,8 +63,8 @@ export interface OcpiRouterConfig {
    */
   prefix?: string;
 
-  /** OCPI version this router handles */
-  version: "2.2.1" | "2.1.1";
+  /** OCPI version this router handles. Well-known: "2.2.1", "2.1.1", "3.0" */
+  version: string;
 
   /**
    * Validate the Authorization: Token header.

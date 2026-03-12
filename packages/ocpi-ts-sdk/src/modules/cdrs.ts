@@ -1,7 +1,7 @@
 import type { OCPIClient } from "../client/index.js";
 import type { PaginatedResponse } from "../client/pagination.js";
 import type { PaginationQuery } from "../client/types.js";
-import type { Cdr } from "../schemas/cdrs.js";
+import type { Cdr } from "../schemas/v2.2.1/cdrs.js";
 
 export class OcpiCdrsModule {
   constructor(private readonly client: OCPIClient) {}

@@ -1,6 +1,6 @@
 # ocpi-ts-sdk
 
-A production-grade, framework-agnostic, multi-tenant SDK for the **Open Charge Point Interface (OCPI)** protocol (2.2.1 and 2.1.1).
+A production-grade, framework-agnostic, multi-tenant SDK for the **Open Charge Point Interface (OCPI)** protocol — built for OCPI 2.2.1 with graceful 2.1.1 compatibility.
 
 Designed to handle scale, resilient networking, and easy integration into any JavaScript/TypeScript runtime.
 
@@ -10,11 +10,16 @@ Designed to handle scale, resilient networking, and easy integration into any Ja
 
 - **Full OCPI Protocol Support**: Covers Locations, Sessions, CDRs, Tariffs, Tokens, Commands, and Credentials.
 - **Client & Receiver**: Includes both a resilient HTTP client (`OCPIClient`) and a framework-agnostic request router (`OCPIRouter`) for webhooks.
-- **Multi-Tenant SaaS Ready**: Built-in `OcpiClientRegistry` for managing thousands of tenant connections with LRU caching and parallel initialization.
-- **Resilience Standard**: Includes a 3-state Circuit Breaker, proactive Partner Rate Limiter (based on `X-Limit-*`), and automatic retry mechanisms.
-- **Modern Paradigms**: Features `async *stream()` for memory-efficient pagination across large datasets.
-- **Framework Agnostic**: The router works natively with Express, Fastify, Node.js `http`, Bun, and Cloudflare Workers via Web Standard API (`Request`/`Response`).
-- **Bring Your Own Logger**: Compatible with `voltlog-io`, `pino`, `winston`, or falling back to a zero-dependency `console` logger. Auto-scopes logs per connection.
+- **Multi-Tenant SaaS Ready**: Built-in `OcpiClientRegistry` for managing thousands of tenant connections with LRU caching.
+- **Resilience Built-In**: 3-state Circuit Breaker, proactive Partner Rate Limiter (`X-Limit-*`), and automatic retry mechanisms.
+- **Modern Paradigms**: `async *stream()` for memory-efficient pagination across large datasets.
+- **Framework Agnostic**: Works natively with Express, Fastify, Node.js `http`, Bun, and Cloudflare Workers.
+- **Version Agnostic**: Auto-negotiates OCPI version. Schemas organized per-version (`v2.2.1/`). Add new versions by registering one schema map — no router or client changes needed.
+- **Lenient 2.1.1 Compatibility**: `schemaValidation: "lenient"` allows older partner payloads to pass through without rejection.
+- **Tariff Price Calculator**: `OcpiCalculator.estimateCost()` handles step-based tariff math for driver-facing cost estimates.
+- **Background Data Pump**: `OcpiDataPump` auto-syncs partner locations and tariffs in the background via incremental `date_from` polling.
+- **OCPI Hub Routing**: Router supports `mode: "HUB"` for transparent request proxying between parties via `OCPI-to-*` headers.
+- **Bring Your Own Logger**: Compatible with `voltlog-io`, `pino`, `winston`, or a zero-dependency `console` logger.
 
 ---
 
@@ -25,13 +30,12 @@ npm install ocpi-ts-sdk
 # or pnpm, yarn, bun
 ```
 
-The package provides multiple subpath exports for clean, tree-shakeable imports:
-- `ocpi-ts-sdk` (Main / Client)
+Subpath exports for tree-shakeable imports:
+- `ocpi-ts-sdk` — Main entry (client, schemas, utils)
 - `ocpi-ts-sdk/router`
 - `ocpi-ts-sdk/registry`
 - `ocpi-ts-sdk/errors`
 - `ocpi-ts-sdk/logger`
-- `ocpi-ts-sdk/schemas/*`
 
 ---
 
@@ -48,29 +52,28 @@ const client = new OCPIClient({
   partyId: "CPO",
   countryCode: "DE",
   
-  // Optional Resilience Configuration
+  // Optional: preferred version. Negotiated dynamically with partner during init().
+  // Well-known values: "2.1.1", "2.2.1", "3.0" — any version string works.
+  version: "2.2.1",
+
   retries: 3,
   circuitBreaker: { failureThreshold: 5, cooldownMs: 60000 },
-  logging: { enabled: true } // Connect your own logger here
+  logging: { enabled: true }
 });
 
-// 1. Initialize to automatically discover all partner endpoints via the Versions handshake
+// Runs the OCPI version negotiation handshake, auto-discovers all module endpoints
 await client.init();
 
-// 2. Fetch data (Auto-paginated streaming)
+// Fetch data (streaming, auto-paginated, memory-safe)
 for await (const location of client.locations.stream()) {
   console.log("Fetched location:", location.id);
 }
 
-// 3. Push data (Methods match the OCPI verbs)
-await client.sessions.create({
-  id: "SES123",
-  status: "ACTIVE",
-  // ...
-});
+// Push data
+await client.sessions.create({ id: "SES123", status: "ACTIVE" /* ... */ });
 
-// 4. Send Commands
-const result = await client.commands.startSession({
+// Send Commands
+await client.commands.startSession({
   response_url: "https://my-system.com/ocpi/commands/callback",
   location_id: "LOC-1",
   token: { uid: "RFID123", type: "RFID" }
@@ -79,42 +82,9 @@ const result = await client.commands.startSession({
 
 ---
 
-## 2. The Initial Handshake (Credentials)
+## 2. The OCPI Router (Receive Webhooks)
 
-Before communicating with a new partner, you typically need to exchange credentials. The SDK makes this simple:
-
-```typescript
-import { OCPIClient } from "ocpi-ts-sdk";
-
-const client = new OCPIClient({
-  versionsUrl: "https://partner.com/ocpi/versions",
-  credentialsToken: "initial-token-from-partner",
-  partyId: "CPO",
-  countryCode: "DE",
-});
-
-await client.init();
-
-// Register your server's endpoints with the partner
-const credentials = await client.credentials.register({
-  token: "your-new-token-for-the-partner",
-  url: "https://my-system.com/ocpi/versions",
-  roles: [{
-    role: "CPO",
-    party_id: "CPO",
-    country_code: "DE",
-    business_details: { name: "My CPO Network" }
-  }]
-});
-
-console.log("Partner's new token to reach you:", credentials.token);
-```
-
----
-
-## 3. The OCPI Router (Webhooks & Server)
-
-The `OCPIRouter` is a framework-agnostic handler for incoming OCPI requests. It handles token authentication, payload validation, routing, and tenant extraction.
+The `OCPIRouter` handles incoming OCPI requests from partners — token auth, payload validation, routing, and tenant extraction.
 
 ```typescript
 import { OCPIRouter } from "ocpi-ts-sdk/router";
@@ -122,80 +92,165 @@ import { OCPIRouter } from "ocpi-ts-sdk/router";
 const router = new OCPIRouter({
   version: "2.2.1",
   prefix: "/ocpi", // Or "/ocpi/:tenantId" for multi-tenancy
-  
-  // Authenticate incoming requests
+
   tokenAuth: async (token, tenantId) => {
     const partner = await database.getPartnerByToken(token);
-    if (!partner) return null; // Automatically returns 401 Unauthorized
-    
-    return {
-      partyId: partner.partyId,
-      countryCode: partner.countryCode,
-      tenantId: tenantId
-    };
+    return partner ?? null; // Returning null auto-sends 401
   }
 });
 
-// Register strongly-typed handlers
 router.on("location:put", async (location, ctx) => {
-  console.log(`Received PUT from ${ctx.partner.partyId} for ${location.id}`);
   await database.saveLocation(ctx.tenantId, location);
-  
-  return { status_code: 1000, status_message: "Success" };
+  return { status_code: 1000 };
 });
 
 router.on("cdr:post", async (cdr, ctx) => {
   await database.saveCdr(cdr);
-  return { status_code: 1000, status_message: "Accepted" };
+  return { status_code: 1000 };
 });
 ```
 
-### Mount the Router to your Framework
+### Mount to your framework
 
-**Express:**
 ```typescript
-import express from 'express';
-const app = express();
-app.use(express.json()); // Required
-app.use(router.express()); // Mount the router adapter
-app.listen(3000);
-```
+// Express
+app.use(router.express());
 
-**Bun / Cloudflare Workers (Web Standard Fetch):**
-```typescript
-export default {
-  async fetch(request: Request) {
-    if (new URL(request.url).pathname.startsWith("/ocpi")) {
-      return router.fetch(request);
-    }
-    return new Response("Not found", { status: 404 });
-  }
-}
+// Bun / Cloudflare Workers
+export default { fetch: router.fetch() };
+
+// Raw Node.js
+import { createServer } from "node:http";
+createServer(router.node()).listen(3000);
 ```
 
 ---
 
-## 4. SaaS & Enterprise Scale (Multi-Tenancy)
+## 3. OCPI Version Compatibility
 
-If you are building an e-mobility SaaS platform (like a CSMS or EMSS), you likely need to maintain connections to hundreds or thousands of external OCPI partners on behalf of your tenants.
+### Receiving from a 2.1.1 partner (lenient mode)
 
-**Do not manually instantiate clients.** Use the `OcpiClientRegistry`.
+```typescript
+const router = new OCPIRouter({
+  version: "2.2.1",
+  schemaValidation: "lenient", // Accepts 2.1.1 payloads — logs warning, never rejects
+  tokenAuth,
+});
+```
+
+### Supporting both 2.1.1 and 2.2.1 partners on the same server
+
+```typescript
+const router221 = new OCPIRouter({ version: "2.2.1", schemaValidation: "strict-2.2.1", tokenAuth });
+const router211 = new OCPIRouter({ version: "2.1.1", schemaValidation: "lenient", tokenAuth });
+
+// Same handler works for both
+const handleLocation = async (location, ctx) => {
+  await db.upsert(location);
+  return { status_code: 1000 };
+};
+
+router221.on("location:put", handleLocation);
+router211.on("location:put", handleLocation);
+
+// Express — each router only responds to its own URL version segment
+app.use(router221.express()); // /ocpi/receiver/2.2.1/...
+app.use(router211.express()); // /ocpi/receiver/2.1.1/...
+```
+
+---
+
+## 4. Background Data Pump
+
+`OcpiDataPump` automatically syncs partner data in the background using incremental `date_from` polling — no manual cron jobs.
+
+```typescript
+import { OcpiDataPump } from "ocpi-ts-sdk";
+
+const pump = new OcpiDataPump(client, {
+  intervalMs: 900_000,       // Poll every 15 minutes (default)
+  syncLocations: true,        // Default: true
+  syncTariffs: true,          // Default: true
+  initialDateFrom: new Date(Date.now() - 24 * 60 * 60 * 1000), // Start from 24h ago
+});
+
+pump.on("location:upsert", (location) => db.locations.upsert(location));
+pump.on("tariff:upsert",   (tariff)   => db.tariffs.upsert(tariff));
+pump.on("sync:complete",   (module, stats) => {
+  console.log(`Synced ${stats.count} ${module} since ${stats.dateFrom}`);
+});
+pump.on("error", (err) => console.error("Sync failed:", err));
+
+pump.start();
+
+// Later, during graceful shutdown:
+pump.stop();
+```
+
+---
+
+## 5. Tariff Price Calculator
+
+`OcpiCalculator` is a pure synchronous utility for estimating session costs — useful for driver-facing mobile apps.
+
+Handles all OCPI tariff dimensions: `ENERGY`, `TIME`, `PARKING_TIME`, `FLAT`, and step-size rounding.
+
+```typescript
+import { OcpiCalculator } from "ocpi-ts-sdk";
+
+const estimate = OcpiCalculator.estimateCost(tariff, {
+  kwh: 25,          // Predicted energy
+  hours: 1.5,       // Predicted charging time
+  parkingHours: 0.5 // Predicted idle time after charging
+});
+
+console.log(estimate);
+// { exclVat: 14.25, inclVat: 16.99, currency: "EUR" }
+```
+
+Returns the **maximum** estimate across all tariff elements — safe to show as "up to" cost to drivers.
+
+---
+
+## 6. OCPI Hub Routing
+
+Configure the router as a **transparent HTTP proxy** for OCPI Hub deployments — routes requests between parties using `OCPI-to-*` headers.
+
+```typescript
+const hub = new OCPIRouter({
+  version: "2.2.1",
+  prefix: "/ocpi",
+  mode: "HUB",
+  tokenAuth,
+
+  // Resolve the destination URL and token for a given party
+  resolveHubDestination: async (sender, toCountryCode, toPartyId) => {
+    const dest = await db.partners.find({ countryCode: toCountryCode, partyId: toPartyId });
+    if (!dest) return null; // Returns 404 to sender
+    return { baseUrl: dest.ocpiUrl, token: dest.tokenC };
+  }
+});
+```
+
+In HUB mode, the router:
+1. Reads `OCPI-to-country-code` and `OCPI-to-party-id` headers
+2. Calls `resolveHubDestination` to look up the recipient
+3. Replaces the `Authorization` header with the destination token
+4. Proxies the complete request (including body) transparently
+5. Returns the destination's response unchanged to the original sender
+
+---
+
+## 7. SaaS Multi-Tenancy
 
 ```typescript
 import { OcpiClientRegistry } from "ocpi-ts-sdk/registry";
-import { voltLogger } from "voltlog-io"; 
 
 const registry = new OcpiClientRegistry({
-  maxSize: 5000, // LRU Cache size — keeps memory flat
-  logger: voltLogger, // Automatically creates scoped child loggers per tenant
-  defaultConfig: {
-    retries: 3,
-    circuitBreaker: { failureThreshold: 5 }
-  }
+  maxSize: 5000,
+  defaultConfig: { retries: 3, circuitBreaker: { failureThreshold: 5 } }
 });
 
-// Get or dynamically initialize a client for a specific tenant
-// Under the hood, this caches the connection and immediately handles discovery.
 const client = registry.getOrCreate("tenant_acme", {
   versionsUrl: "https://partner.com/ocpi/versions",
   credentialsToken: "acme-secret",
@@ -204,122 +259,81 @@ const client = registry.getOrCreate("tenant_acme", {
 });
 
 await client.init();
-const evses = await client.locations.pull();
-
-// Monitor connection health across your platform
-setInterval(() => {
-  console.log(registry.stats()); 
-  // { size: 1, maxSize: 5000, circuitOpenCount: 0, tenants: ['tenant_acme'] }
-}, 60000);
+console.log(registry.stats()); 
+// { size: 1, maxSize: 5000, circuitOpenCount: 0, tenants: ['tenant_acme'] }
 ```
 
-By prefixing your router paths with `:tenantId` (e.g., `/ocpi/:tenantId/receiver/2.2.1`), `OCPIRouter` will automatically extract the tenant and pass it to your handlers alongside the payload, completing the two-way multi-tenant loop.
+Use `prefix: "/ocpi/:tenantId"` in your router to automatically extract tenant context from the URL and pass it to every handler.
 
 ---
 
-## 5. Advanced Resilience
-
-The SDK is designed to survive unstable roaming hubs and partner systems.
-
-1. **Circuit Breaker**: If a partner's endpoint fails 5 times continuously, the state trips to `OPEN`. The SDK immediately fails-fast with `OcpiCircuitOpenError` for the next 60 seconds (preventing request pileups on your server), before transitioning to `HALF_OPEN` to test recovery.
-2. **Proactive Rate Limiting**: The client parses OCPI `X-Limit` and `X-Limit-Remaining` headers. It emits warnings when approaching limits and natively halts requests via `Retry-After` headers if `429 Too Many Requests` is hit.
-3. **Idempotency**: Critical modules like `cdrs` accept an `idempotencyKey` option.
+## 8. Resilience & Error Handling
 
 ```typescript
-await client.cdrs.push(myCdr, { idempotencyKey: myCdr.id });
-```
-
----
-
-## 6. Error Handling
-
-Catch and distinguish exact OCPI failures using the provided error classes.
-
-```ts
-import { OcpiError, OcpiHttpError, OcpiCircuitOpenError, OcpiRateLimitError } from "ocpi-ts-sdk/errors";
+import { OcpiCircuitOpenError, OcpiRateLimitError, OcpiHttpError } from "ocpi-ts-sdk/errors";
 
 try {
   await client.cdrs.push(myCdr, { idempotencyKey: myCdr.id });
 } catch (error) {
   if (error instanceof OcpiCircuitOpenError) {
-    console.log("Partner Hub is down. Saving CDR to Dead Letter Queue.");
+    // Partner hub is down — save to dead letter queue
   } else if (error instanceof OcpiRateLimitError) {
-    console.log("Hit rate limit. They want us to back off.");
+    // Back off and retry later
   } else if (error instanceof OcpiHttpError) {
-    console.log(`HTTP ${error.httpStatus} from partner: ${error.message}`);
-  } else if (error instanceof OcpiError) {
-    console.log(`OCPI Application Error: ${error.statusCode} - ${error.statusMessage}`);
-  } else {
-    console.log("Unknown network/system error", error);
+    console.log(`HTTP ${error.httpStatus}: ${error.message}`);
   }
 }
 ```
 
+- **Circuit Breaker**: Trips OPEN after N failures, fast-fails for `cooldownMs`, then probes recovery via HALF_OPEN.
+- **Rate Limiter**: Parses `X-Limit-Remaining` proactively. Respects `Retry-After` on 429.
+- **Idempotency**: Pass `{ idempotencyKey }` to CDR/Session push methods to prevent duplicate push on retry.
+
 ---
 
-## 7. Additional Patterns
+## 9. Zod Schemas & Types
 
-### Manual Pagination
-If you don't want to use the async generator `stream()` (e.g. for a UI that pages 10 items at a time), you can manually pull pages:
-
-```typescript
-const page1 = await client.locations.pull({ limit: 10, offset: 0 });
-console.log(`Viewing 10 out of ${page1.totalCount} locations`);
-
-// Fetch next page automatically using the 'Link' header provided by partner
-const page2 = await page1.nextPage();
-```
-
-### Raw Node.js / Fastify Router Integration
-If you aren't using Express or Web Standard `fetch`, you can use the generic Node.js adapter which accepts standard `IncomingMessage` and `ServerResponse`:
+All OCPI types are Zod schemas — use them to validate your own models:
 
 ```typescript
-import { createServer } from "node:http";
+import { LocationSchema, type Location } from "ocpi-ts-sdk";
+// Or import directly from versioned path:
+import { LocationSchema } from "ocpi-ts-sdk/schemas/v2.2.1/locations";
 
-const server = createServer(async (req, res) => {
-  if (req.url?.startsWith("/ocpi")) {
-    await router.node()(req, res);
-    return;
-  }
-  res.statusCode = 404;
-  res.end();
-});
+const myLocation: Location = { /* ... */ };
+LocationSchema.parse(myLocation); // Throws detailed ZodError on failure
 ```
 
-### Bring Your Own Logger (Pino, Winston, etc.)
-The SDK uses a standard logging interface. You can map your favorite logger (like Pino) natively, so SDK logs are merged seamlessly into your application's JSON logs:
+Schema folder structure:
+```
+schemas/
+  common.ts          ← Shared version-agnostic types (GeoLocation, Price...)
+  versions.ts        ← Version negotiation types
+  index.ts           ← Re-exports everything from v2.2.1/
+  v2.2.1/            ← OCPI 2.2.1 specific schemas
+    locations.ts, sessions.ts, cdrs.ts, tariffs.ts,
+    tokens.ts, commands.ts, credentials.ts
+```
+
+**Adding OCPI 3.0 later:** Create `schemas/v3.0/` and register `"3.0": v30SchemaMap` in the router — nothing else changes.
+
+---
+
+## 10. Logger Integration (Pino, Winston, etc.)
 
 ```typescript
 import pino from "pino";
 import type { OcpiLogger } from "ocpi-ts-sdk/logger";
 
-const myPino = pino();
+const log = pino();
 const myLogger: OcpiLogger = {
-  info: (msg, meta) => myPino.info(meta, msg),
-  warn: (msg, meta) => myPino.warn(meta, msg),
-  error: (msg, meta) => myPino.error(meta, msg),
-  debug: (msg, meta) => myPino.debug(meta, msg),
-  trace: (msg, meta) => myPino.trace(meta, msg),
-  // Essential for OcpiClientRegistry multi-tenancy logs
-  child: (bindings) => createMyChildLogger(bindings), 
+  info:  (msg, meta) => log.info(meta, msg),
+  warn:  (msg, meta) => log.warn(meta, msg),
+  error: (msg, meta) => log.error(meta, msg),
+  debug: (msg, meta) => log.debug(meta, msg),
+  trace: (msg, meta) => log.trace(meta, msg),
+  child: (bindings) => createChildLogger(bindings), // required for registry
 };
 
-const client = new OCPIClient({
-  // ...config
-  logging: { enabled: true, logger: myLogger }
-});
-```
-
-### Raw OCPI Zod Schemas
-Every OCPI 2.2.1 payload type and Zod schema is exported, allowing you to validate your own internal database models against strict OCPI requirements:
-
-```typescript
-import { LocationSchema, type Location } from "ocpi-ts-sdk/schemas/locations";
-import { TariffSchema } from "ocpi-ts-sdk/schemas/tariffs";
-import { StartSessionSchema } from "ocpi-ts-sdk/schemas/commands";
-
-const myLocation: Location = { ... };
-
-// Throws detailed ZodError if you missed required fields or formatting
-LocationSchema.parse(myLocation); 
+const client = new OCPIClient({ /* ... */, logging: { enabled: true, logger: myLogger } });
 ```

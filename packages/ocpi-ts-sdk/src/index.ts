@@ -69,15 +69,15 @@ export type {
 } from "./router/context.js";
 // ── Router ───────────────────────────────────────────────────────────────────
 export { OCPIRouter } from "./router/index.js";
-export * from "./schemas/cdrs.js";
-export * from "./schemas/commands.js";
 // ── Schemas (all, tree-shakeable) ────────────────────────────────────────────
 export * from "./schemas/common.js";
-export * from "./schemas/credentials.js";
-export * from "./schemas/locations.js";
-export * from "./schemas/sessions.js";
-export * from "./schemas/tariffs.js";
-export * from "./schemas/tokens.js";
+export * from "./schemas/v2.2.1/cdrs.js";
+export * from "./schemas/v2.2.1/commands.js";
+export * from "./schemas/v2.2.1/credentials.js";
+export * from "./schemas/v2.2.1/locations.js";
+export * from "./schemas/v2.2.1/sessions.js";
+export * from "./schemas/v2.2.1/tariffs.js";
+export * from "./schemas/v2.2.1/tokens.js";
 export * from "./schemas/versions.js";
 
 // ── Utils ────────────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PriceSchema } from "./common.js";
+import { PriceSchema } from "../common.js";
 
 export const ChargingPeriodSchema = z.object({
   start_date_time: z.string().datetime(),
@@ -45,7 +45,6 @@ export const SessionSchema = z.object({
 });
 export type Session = z.infer<typeof SessionSchema>;
 
-/** Patch schema — all fields optional except last_updated (required by OCPI spec) */
 export const SessionPatchSchema = SessionSchema.partial().required({
   last_updated: true,
 });

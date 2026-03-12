@@ -8,7 +8,7 @@ import type {
   OcpiRouterContext,
 } from "./context.js";
 import type { RouterEvent, RouterEventMap } from "./events.js";
-import { EventSchemaMap } from "./schemas.js";
+import { getSchemaMap } from "./schemas.js";
 
 /**
  * OCPIRouter — Framework-agnostic OCPI receiver.
@@ -277,8 +277,8 @@ export class OCPIRouter {
         );
       }
 
-      // Validate payload via Zod schemas
-      const schema = EventSchemaMap[event];
+      // Validate payload via Zod schemas — version-aware lookup
+      const schema = getSchemaMap(this.config.version)[event];
       if (schema) {
         const validation = schema.safeParse(body);
         if (!validation.success) {
@@ -291,7 +291,10 @@ export class OCPIRouter {
             );
           } else {
             const missing = validation.error.issues
-              .map((issue) => `${issue.path.join(".")} (${issue.message})`)
+              .map(
+                (issue: { path: (string | number)[]; message: string }) =>
+                  `${issue.path.join(".")} (${issue.message})`,
+              )
               .join(", ");
             return this._errorResponse(
               2001,

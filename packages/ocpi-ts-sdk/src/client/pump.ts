@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
-import type { Location } from "../schemas/locations.js";
-import type { Tariff } from "../schemas/tariffs.js";
+import type { Location } from "../schemas/v2.2.1/locations.js";
+import type { Tariff } from "../schemas/v2.2.1/tariffs.js";
 import type { OCPIClient } from "./index.js";
 
 export interface OcpiDataPumpConfig {
