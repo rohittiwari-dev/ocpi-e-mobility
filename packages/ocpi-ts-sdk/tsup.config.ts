@@ -23,7 +23,10 @@ export default defineConfig({
   sourcemap: false,
   clean: true,
   outDir: "dist",
+  target: "node18",
+  shims: true,
+  minify: true,
+  treeshake: true,
   // Avoid bundling node built-ins — let the consumer's runtime handle them
   external: ["node:events", "node:http", "node:crypto"],
 });
-
