@@ -1,0 +1,40 @@
+{
+  "name": "ocpi-e-mobility-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check --write .",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "publish:packages": "turbo run build && changeset publish",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.6",
+    "@changesets/cli": "^2.30.0",
+    "@commitlint/cli": "^20.4.3",
+    "@commitlint/config-conventional": "^20.4.3",
+    "cz-conventional-changelog": "^3.3.0",
+    "husky": "^9.1.7",
+    "turbo": "^2.8.16",
+    "typescript": "^5.9.3"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "author": "Rohit Tiwari <rohit@rohittiwari.me>",
+  "packageManager": "^npm@10.2.4",
+  "bugs": {
+    "url": "https://github.com/rohittiwari-dev/ocpi-e-mobility/issues"
+  }
+}
