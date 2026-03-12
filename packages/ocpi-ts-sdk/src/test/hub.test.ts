@@ -15,7 +15,7 @@ function makeHubRouter() {
     tokenAuth: async (token) =>
       token === "sender-token" ? PARTNER_SENDER : null,
     logging: { enabled: false },
-    resolveHubDestination: async (sender, toCountryCode, toPartyId) => {
+    resolveHubDestination: async (_sender, toCountryCode, toPartyId) => {
       if (toCountryCode === "FR" && toPartyId === "GIR") {
         return {
           baseUrl: "https://gireve.com/ocpi-receiver",
