@@ -8,81 +8,81 @@
   "type": "module",
   "exports": {
     ".": {
-      "types":   "./dist/index.d.ts",
-      "import":  "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
     "./client": {
-      "types":   "./dist/client/index.d.ts",
-      "import":  "./dist/client/index.js",
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js",
       "require": "./dist/client/index.cjs"
     },
     "./router": {
-      "types":   "./dist/router/index.d.ts",
-      "import":  "./dist/router/index.js",
+      "types": "./dist/router/index.d.ts",
+      "import": "./dist/router/index.js",
       "require": "./dist/router/index.cjs"
     },
     "./registry": {
-      "types":   "./dist/registry/index.d.ts",
-      "import":  "./dist/registry/index.js",
+      "types": "./dist/registry/index.d.ts",
+      "import": "./dist/registry/index.js",
       "require": "./dist/registry/index.cjs"
     },
     "./errors": {
-      "types":   "./dist/client/errors.d.ts",
-      "import":  "./dist/client/errors.js",
+      "types": "./dist/client/errors.d.ts",
+      "import": "./dist/client/errors.js",
       "require": "./dist/client/errors.cjs"
     },
     "./logger": {
-      "types":   "./dist/logger/index.d.ts",
-      "import":  "./dist/logger/index.js",
+      "types": "./dist/logger/index.d.ts",
+      "import": "./dist/logger/index.js",
       "require": "./dist/logger/index.cjs"
     },
     "./schemas": {
-      "types":   "./dist/schemas/index.d.ts",
-      "import":  "./dist/schemas/index.js",
+      "types": "./dist/schemas/index.d.ts",
+      "import": "./dist/schemas/index.js",
       "require": "./dist/schemas/index.cjs"
     },
     "./schemas/locations": {
-      "types":   "./dist/schemas/locations.d.ts",
-      "import":  "./dist/schemas/locations.js",
+      "types": "./dist/schemas/locations.d.ts",
+      "import": "./dist/schemas/locations.js",
       "require": "./dist/schemas/locations.cjs"
     },
     "./schemas/sessions": {
-      "types":   "./dist/schemas/sessions.d.ts",
-      "import":  "./dist/schemas/sessions.js",
+      "types": "./dist/schemas/sessions.d.ts",
+      "import": "./dist/schemas/sessions.js",
       "require": "./dist/schemas/sessions.cjs"
     },
     "./schemas/cdrs": {
-      "types":   "./dist/schemas/cdrs.d.ts",
-      "import":  "./dist/schemas/cdrs.js",
+      "types": "./dist/schemas/cdrs.d.ts",
+      "import": "./dist/schemas/cdrs.js",
       "require": "./dist/schemas/cdrs.cjs"
     },
     "./schemas/tariffs": {
-      "types":   "./dist/schemas/tariffs.d.ts",
-      "import":  "./dist/schemas/tariffs.js",
+      "types": "./dist/schemas/tariffs.d.ts",
+      "import": "./dist/schemas/tariffs.js",
       "require": "./dist/schemas/tariffs.cjs"
     },
     "./schemas/tokens": {
-      "types":   "./dist/schemas/tokens.d.ts",
-      "import":  "./dist/schemas/tokens.js",
+      "types": "./dist/schemas/tokens.d.ts",
+      "import": "./dist/schemas/tokens.js",
       "require": "./dist/schemas/tokens.cjs"
     },
     "./schemas/commands": {
-      "types":   "./dist/schemas/commands.d.ts",
-      "import":  "./dist/schemas/commands.js",
+      "types": "./dist/schemas/commands.d.ts",
+      "import": "./dist/schemas/commands.js",
       "require": "./dist/schemas/commands.cjs"
     },
     "./schemas/credentials": {
-      "types":   "./dist/schemas/credentials.d.ts",
-      "import":  "./dist/schemas/credentials.js",
+      "types": "./dist/schemas/credentials.d.ts",
+      "import": "./dist/schemas/credentials.js",
       "require": "./dist/schemas/credentials.cjs"
     }
   },
   "scripts": {
     "build": "tsup",
-    "dev":   "tsup --watch",
+    "dev": "tsup --watch",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
-    "test":  "vitest run",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -90,8 +90,9 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "tsup":        "^8.5.1",
-    "typescript":  "^5.7.3",
-    "vitest":      "^4.0.18"
+    "@vitest/coverage-v8": "^4.0.18",
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.3",
+    "vitest": "^4.0.18"
   }
 }
