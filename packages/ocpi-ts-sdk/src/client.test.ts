@@ -1,5 +1,4 @@
-import assert from "node:assert";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { OcpiClient } from "./client/index.js";
 import { GeoLocationSchema } from "./schemas/index.js";
 
@@ -12,12 +11,10 @@ test("OcpiClient handles basic GET fetching", async (_t) => {
   // Mocking global fetch for this test
   const originalFetch = global.fetch;
   global.fetch = async (input, init) => {
-    assert.strictEqual(
-      input.toString(),
+    expect(input.toString()).toBe(
       "https://test.local/ocpi/sender/2.2.1/locations?limit=10",
     );
-    assert.strictEqual(
-      new Headers(init?.headers).get("Authorization"),
+    expect(new Headers(init?.headers).get("Authorization")).toBe(
       "Token test-token",
     );
 
@@ -44,9 +41,9 @@ test("OcpiClient handles basic GET fetching", async (_t) => {
         limit: "10",
       },
     );
-    assert.strictEqual(data.length, 1);
-    assert.strictEqual((data[0] as any)?.id, "LOC1");
-    assert.strictEqual(client.rateLimit.remaining, 99);
+    expect(data.length).toBe(1);
+    expect((data[0] as any)?.id).toBe("LOC1");
+    expect(client.rateLimit.remaining).toBe(99);
   } finally {
     global.fetch = originalFetch;
   }
@@ -58,9 +55,9 @@ test("GeoLocationSchema parses correct lat/long", () => {
     longitude: "4.12345",
   });
 
-  assert.strictEqual(valid.latitude, "51.34567");
+  expect(valid.latitude).toBe("51.34567");
 
-  assert.throws(() => {
+  expect(() => {
     GeoLocationSchema.parse({ latitude: "51.3", longitude: "4.1" }); // too short
-  });
+  }).toThrow();
 });
